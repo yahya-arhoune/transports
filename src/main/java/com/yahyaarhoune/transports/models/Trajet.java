@@ -1,5 +1,6 @@
 package com.yahyaarhoune.transports.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -33,6 +34,7 @@ public class Trajet {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vehicule_id")
+    @JsonBackReference("vehicule-trajets")
     private Vehicule vehicule;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -1,5 +1,6 @@
 package com.yahyaarhoune.transports.models;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.yahyaarhoune.transports.models.enums.EtatVehicule;
 import com.yahyaarhoune.transports.models.enums.TypeVehicule;
 import jakarta.persistence.*;
@@ -27,6 +28,7 @@ public class Vehicule {
     private String positionGPS; // Could be a more complex type or two doubles (lat/lon)
 
     @OneToMany(mappedBy = "vehicule")
+    @JsonManagedReference("vehicule-trajets")
     private List<Trajet> listeTrajets = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
