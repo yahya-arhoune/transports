@@ -1,5 +1,6 @@
 package com.yahyaarhoune.transports.service;
 
+import com.yahyaarhoune.transports.dto.TrajetCreationRequestDTO;
 import com.yahyaarhoune.transports.models.Incident;
 import com.yahyaarhoune.transports.models.Ticket; // << ADD IMPORT
 import com.yahyaarhoune.transports.models.Trajet;
@@ -21,5 +22,6 @@ public interface TrajetService {
     List<Ticket> getTicketsForTrajet(Integer trajetId);
     Trajet addPassagerToTrajet(Integer trajetId, Integer utilisateurId);
     Trajet removePassagerFromTrajet(Integer trajetId, Integer utilisateurId);
+    Trajet createTrajetFromDTO(TrajetCreationRequestDTO trajetDto);
     // ---------------------------------
 }

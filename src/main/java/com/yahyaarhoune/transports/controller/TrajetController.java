@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.yahyaarhoune.transports.dto.TrajetCreationRequestDTO;
 
 // import java.time.LocalDateTime; // Not directly needed in controller if Trajet object has them
 import java.util.List;
@@ -23,11 +24,8 @@ public class TrajetController {
     }
 
     @PostMapping
-    public ResponseEntity<Trajet> createTrajet(@RequestBody Trajet trajet) {
-        // The @RequestBody Trajet trajet already contains all necessary information.
-        // The service method createTrajet(Trajet trajet) will handle extracting IDs
-        // for Vehicule and Conducteur if needed, or using the provided nested objects.
-        Trajet createdTrajet = trajetService.createTrajet(trajet);
+    public ResponseEntity<Trajet> createTrajet(@RequestBody TrajetCreationRequestDTO trajetDto) {
+        Trajet createdTrajet = trajetService.createTrajetFromDTO(trajetDto);
         return new ResponseEntity<>(createdTrajet, HttpStatus.CREATED);
     }
 
@@ -103,4 +101,5 @@ public class TrajetController {
         Trajet trajet = trajetService.removePassagerFromTrajet(trajetId, utilisateurId);
         return ResponseEntity.ok(trajet);
     }
+
 }

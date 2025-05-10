@@ -1,5 +1,6 @@
 package com.yahyaarhoune.transports.service.impl;
 
+import com.yahyaarhoune.transports.dto.TrajetCreationRequestDTO;
 import com.yahyaarhoune.transports.exception.ResourceNotFoundException;
 import com.yahyaarhoune.transports.models.*; // Using wildcard for brevity
 import com.yahyaarhoune.transports.repository.*; // Using wildcard
@@ -217,5 +218,27 @@ public class TrajetServiceImpl implements TrajetService {
             // utilisateurStandardRepository.save(utilisateur);
         }
         return trajet; // Return trajet even if no changes made, or throw if not found
+    }
+
+
+    @Override
+    @Transactional
+    public Trajet createTrajetFromDTO(TrajetCreationRequestDTO trajetDto) {
+        // ... (validate times and IDs from DTO as shown in previous response) ...
+
+        Vehicule vehicule = vehiculeRepository.findById(trajetDto.getVehiculeId())
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicule", "id", trajetDto.getVehiculeId()));
+        Conducteur conducteur = conducteurRepository.findById(trajetDto.getConducteurId())
+                .orElseThrow(() -> new ResourceNotFoundException("Conducteur", "id", trajetDto.getConducteurId()));
+
+        Trajet trajet = new Trajet();
+        trajet.setId(null);
+        trajet.setOrigine(trajetDto.getOrigine());
+        trajet.setDestination(trajetDto.getDestination());
+        trajet.setHeureDepart(trajetDto.getHeureDepart());
+        trajet.setHeureArrivee(trajetDto.getHeureArrivee());
+        trajet.setVehicule(vehicule);
+        trajet.setConducteur(conducteur);
+        return trajetRepository.save(trajet);
     }
 }

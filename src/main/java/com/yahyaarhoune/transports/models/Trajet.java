@@ -49,4 +49,5 @@ public class Trajet {
 
     @OneToMany(mappedBy = "trajet", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Incident> incidents = new ArrayList<>();
+
 }
