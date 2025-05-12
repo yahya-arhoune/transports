@@ -19,6 +19,7 @@ import java.util.Collections; // For an empty map if needed
 import java.util.HashMap;
 import java.util.Map;
 
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
