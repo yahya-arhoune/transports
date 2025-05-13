@@ -27,7 +27,7 @@ public class TicketController {
         // Le service devrait les fetcher. Le codeValidation devrait être généré par le service.
         // La dateAchat aussi.
         Ticket createdTicket = ticketService.createTicket(
-                ticket.getUtilisateur() != null ? ticket.getUtilisateur().getId() : null,
+                Math.toIntExact(ticket.getUtilisateur() != null ? ticket.getUtilisateur().getId() : null),
                 ticket.getTrajet() != null ? ticket.getTrajet().getId() : null,
                 null // Laisser le service générer le code de validation
         );

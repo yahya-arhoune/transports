@@ -1,18 +1,23 @@
 package com.yahyaarhoune.transports.models.base;
 
-import com.yahyaarhoune.transports.models.Utilisateur;
+import com.yahyaarhoune.transports.models.enums.Role; // Ensure this import is correct
+// Or keep it if Utilisateur is an interface AbstractUtilisateur implements
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.NoArgsConstructor; // Added for completeness if you use it
+
+import java.time.LocalDate; // Import for dateNaissance
 
 @Getter
 @Setter
-@MappedSuperclass // Ensures this class's fields are part of its subclasses' tables
-public abstract class AbstractUtilisateur implements Utilisateur {
+@NoArgsConstructor // Good to have for JPA entities
+@MappedSuperclass
+public abstract class AbstractUtilisateur { // Removed 'implements Utilisateur' unless Utilisateur is an interface you defined
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id; // Changed back to Long, more common for IDs
 
     @Column(nullable = false)
     private String nom;
@@ -24,5 +29,11 @@ public abstract class AbstractUtilisateur implements Utilisateur {
     private String email;
 
     @Column(nullable = false)
-    private String motDePasse; // In a real app, this would be hashed
+    private String motDePasse;
+
+    private LocalDate dateNaissance; // Added back if you need it
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false) // Make sure role is not nullable if every user must have one
+    private Role role;           // <<< --- ADD THIS FIELD ---
 }

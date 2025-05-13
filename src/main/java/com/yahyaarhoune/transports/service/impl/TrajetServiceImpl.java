@@ -60,7 +60,7 @@ public class TrajetServiceImpl implements TrajetService {
         }
 
         if (trajet.getConducteur() != null && trajet.getConducteur().getId() != null) {
-            Conducteur conducteur = conducteurRepository.findById(trajet.getConducteur().getId())
+            Conducteur conducteur = conducteurRepository.findById(Math.toIntExact(trajet.getConducteur().getId()))
                     .orElseThrow(() -> new ResourceNotFoundException("Conducteur", "id", trajet.getConducteur().getId()));
             trajet.setConducteur(conducteur);
         } else {
@@ -106,7 +106,7 @@ public class TrajetServiceImpl implements TrajetService {
 
 
                     if (trajetDetails.getConducteur() != null && trajetDetails.getConducteur().getId() != null) {
-                        Conducteur conducteur = conducteurRepository.findById(trajetDetails.getConducteur().getId())
+                        Conducteur conducteur = conducteurRepository.findById(Math.toIntExact(trajetDetails.getConducteur().getId()))
                                 .orElseThrow(() -> new ResourceNotFoundException("Conducteur", "id", trajetDetails.getConducteur().getId()));
                         existingTrajet.setConducteur(conducteur);
                     } else if (trajetDetails.getConducteur() == null) { // Allow unassigning conductor explicitly

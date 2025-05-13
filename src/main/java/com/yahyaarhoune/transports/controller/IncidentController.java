@@ -29,7 +29,7 @@ public class IncidentController {
         Incident createdIncident = incidentService.createIncident(
                 incident.getType(),
                 incident.getDescription(),
-                incident.getSignalePar() != null ? incident.getSignalePar().getId() : null,
+                Math.toIntExact(incident.getSignalePar() != null ? incident.getSignalePar().getId() : null),
                 incident.getTrajet() != null ? incident.getTrajet().getId() : null
         );
         return new ResponseEntity<>(createdIncident, HttpStatus.CREATED);

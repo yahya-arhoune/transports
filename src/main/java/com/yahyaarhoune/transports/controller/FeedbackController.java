@@ -25,7 +25,7 @@ public class FeedbackController {
         // ATTENTION : L'Utilisateur dans l'objet feedback devrait avoir son ID setté.
         // Le service devrait le fetcher. La date devrait être settée par le service.
         Feedback createdFeedback = feedbackService.createFeedback(
-                feedback.getUtilisateur() != null ? feedback.getUtilisateur().getId() : null,
+                Math.toIntExact(feedback.getUtilisateur() != null ? feedback.getUtilisateur().getId() : null),
                 feedback.getMessage()
         );
         return new ResponseEntity<>(createdFeedback, HttpStatus.CREATED);

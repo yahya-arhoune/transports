@@ -1,5 +1,5 @@
 package com.yahyaarhoune.transports.models;
-
+import com.yahyaarhoune.transports.models.enums.Role;
 import com.yahyaarhoune.transports.models.base.AbstractUtilisateur;
 import jakarta.persistence.*;
 import lombok.Getter;
