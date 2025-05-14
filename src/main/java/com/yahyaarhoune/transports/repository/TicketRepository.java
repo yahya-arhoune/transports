@@ -14,10 +14,12 @@ import java.util.Optional;
 public interface TicketRepository extends JpaRepository<Ticket, Integer> {
 
     Optional<Ticket> findByCodeValidation(String codeValidation);
-
+    boolean existsByUtilisateurAndTrajet(UtilisateurStandard utilisateur, Trajet trajet);
     List<Ticket> findByUtilisateur(UtilisateurStandard utilisateur);
 
     List<Ticket> findByTrajet(Trajet trajet);
 
     List<Ticket> findByDateAchatBetween(LocalDateTime start, LocalDateTime end);
+
+
 }
