@@ -17,7 +17,7 @@ public interface UtilisateurStandardRepository extends JpaRepository<Utilisateur
     List<UtilisateurStandard> findByNomIgnoreCase(String nom);
 
     List<UtilisateurStandard> findByNomAndPrenomAllIgnoreCase(String nom, String prenom);
-
+    Boolean existsByEmail(String email);
     // You can add more custom query methods as needed
     // e.g., find users who have taken a specific trajet (would require a join)
 }

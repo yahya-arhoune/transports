@@ -4,8 +4,8 @@ package com.yahyaarhoune.transports.controller;
 import com.yahyaarhoune.transports.models.Administrateur;
 import com.yahyaarhoune.transports.models.Conducteur;
 import com.yahyaarhoune.transports.models.UtilisateurStandard;
-import com.yahyaarhoune.transports.models.enums.Role; // <<< ENSURE THIS PATH IS CORRECT FOR YOUR Role.java
-
+import com.yahyaarhoune.transports.models.enums.Role;// <<< ENSURE THIS PATH IS CORRECT FOR YOUR Role.java
+import com.yahyaarhoune.transports.service.AuthService;
 // --- Repository Imports ---
 import com.yahyaarhoune.transports.repository.AdministrateurRepository;
 import com.yahyaarhoune.transports.repository.ConducteurRepository;
@@ -45,6 +45,9 @@ public class AuthController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired // <<--- INJECT AUTH SERVICE
+    private AuthService authService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;

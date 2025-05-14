@@ -16,7 +16,7 @@ public interface ConducteurRepository extends JpaRepository<Conducteur, Integer>
     Optional<Conducteur> findByVehiculeAssigne(Vehicule vehicule);
 
     List<Conducteur> findByVehiculeAssigneId(Integer vehiculeId);
-
+    Boolean existsByEmail(String email);
     // Example: Find conductors not currently assigned to any vehicle
     List<Conducteur> findByVehiculeAssigneIsNull();
 }
