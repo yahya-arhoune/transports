@@ -19,6 +19,7 @@ import java.util.Map;
 @RequestMapping("/api/tickets")
 public class TicketController {
 
+
     private final TicketService ticketService;
 
     @Autowired
@@ -124,7 +125,7 @@ public class TicketController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Ticket> getTicketById(@PathVariable Integer id) { // Parameter is Integer
-        return ticketService.getTicketById(id)
+        return ticketService.getTicketById(Long.valueOf(id))
                 .map(ticket -> {
                     if (ticket.getUtilisateur() != null) ticket.getUtilisateur().setMotDePasse(null); // Use getUtilisateur()
                     if (ticket.getTrajet() != null && ticket.getTrajet().getConducteur() != null) ticket.getTrajet().getConducteur().setMotDePasse(null);

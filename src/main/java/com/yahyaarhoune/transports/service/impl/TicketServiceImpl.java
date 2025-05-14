@@ -1,4 +1,4 @@
-package com.yahyaarhoune.transports.service.impl; // Assuming this is your package
+package com.yahyaarhoune.transports.service.impl;
 
 import com.yahyaarhoune.transports.exception.ResourceNotFoundException;
 import com.yahyaarhoune.transports.models.Ticket;
@@ -7,18 +7,17 @@ import com.yahyaarhoune.transports.models.UtilisateurStandard;
 import com.yahyaarhoune.transports.repository.TicketRepository;
 import com.yahyaarhoune.transports.repository.TrajetRepository;
 import com.yahyaarhoune.transports.repository.UtilisateurStandardRepository;
-import com.yahyaarhoune.transports.service.TicketService; // Make sure this import is correct
+import com.yahyaarhoune.transports.service.TicketService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+// UUID and LocalDateTime are handled by @PrePersist in Ticket entity
 
 @Service
-public class TicketServiceImpl implements TicketService { // <<--- REMOVED 'abstract'
+public  class TicketServiceImpl implements TicketService {
 
     private final TicketRepository ticketRepository;
     private final UtilisateurStandardRepository utilisateurStandardRepository;
@@ -33,118 +32,136 @@ public class TicketServiceImpl implements TicketService { // <<--- REMOVED 'abst
         this.trajetRepository = trajetRepository;
     }
 
-    // --- IMPLEMENTATION FOR bookTicket ---
+
     @Override
-    @Transactional
     public Ticket bookTicket(Integer utilisateurId, Integer trajetId) {
-        UtilisateurStandard utilisateur = utilisateurStandardRepository.findById(utilisateurId) // Assuming ID is Integer here
+        UtilisateurStandard utilisateur = utilisateurStandardRepository.findById(Math.toIntExact(utilisateurId))
                 .orElseThrow(() -> new ResourceNotFoundException("UtilisateurStandard", "id", utilisateurId));
-        Trajet trajet = trajetRepository.findById(Long.valueOf(trajetId)) // Assuming ID is Integer here
+        Trajet trajet = trajetRepository.findById(Long.valueOf(trajetId))
                 .orElseThrow(() -> new ResourceNotFoundException("Trajet", "id", trajetId));
 
-        // Optional: Add more booking validations (e.g., user already booked, trip capacity)
-        if (ticketRepository.existsByUtilisateurAndTrajet(utilisateur, trajet)) { // Assuming Ticket entity uses 'utilisateur' field
+        if (ticketRepository.existsByUtilisateurAndTrajet(utilisateur, trajet)) { // Assumes Ticket entity field is 'utilisateur'
             throw new IllegalStateException("User already has a ticket for this trip.");
         }
-        // TODO: Check trip status (e.g., not already departed, not cancelled)
-        // TODO: Check trip capacity if applicable
+        // TODO: Add other booking validations (trip status, capacity)
 
-        Ticket ticket = new Ticket();
-        // ticket.setId(null); // Not needed if using @GeneratedValue(strategy = GenerationType.IDENTITY)
-        ticket.setUtilisateur(utilisateur); // Use the correct setter for your Ticket entity
-        ticket.setTrajet(trajet);
-        // dateAchat and codeValidation should be handled by @PrePersist in Ticket entity
-        // If not, generate them here:
-        // ticket.setDateAchat(LocalDateTime.now());
-        // ticket.setCodeValidation(UUID.randomUUID().toString().substring(0, 10).toUpperCase());
+        Ticket newTicket = new Ticket();
+        newTicket.setUtilisateur(utilisateur); // Field in Ticket.java is 'utilisateur'
+        newTicket.setTrajet(trajet);
+        // @PrePersist in Ticket entity will set dateAchat and codeValidation
 
-        return ticketRepository.save(ticket);
+        System.out.println("TicketServiceImpl: About to save new ticket. UserID: " + utilisateurId + ", TrajetID: " + trajetId +
+                ", DateAchat (before @PrePersist): " + newTicket.getDateAchat() +
+                ", CodeValidation (before @PrePersist): " + newTicket.getCodeValidation());
+        Ticket savedTicket = null;
+        try {
+            savedTicket = ticketRepository.save(newTicket);
+        } catch (Exception e) {
+            System.err.println("TicketServiceImpl: EXCEPTION DURING ticketRepository.save()!");
+            e.printStackTrace();
+            throw e;
+        }
+
+        if (savedTicket == null) {
+            System.err.println("TicketServiceImpl: ticketRepository.save(newTicket) RETURNED NULL!");
+            throw new RuntimeException("Failed to save ticket: Repository returned null without an exception.");
+        }
+
+        System.out.println("TicketServiceImpl: Saved ticket. ID: " + savedTicket.getId() +
+                ", CodeValidation: " + savedTicket.getCodeValidation() +
+                ", DateAchat: " + savedTicket.getDateAchat());
+        return savedTicket;
+
     }
 
-    // This method was likely intended for the booking operation without external code validation
-    // If `bookTicket` above is the main one, you might not need this specific `createTicket`
-    // unless there's a use case for passing `codeValidation` from outside.
-    // For now, I'll keep its implementation as you had it, but it might be redundant.
-    @Transactional
     @Override
     public Ticket createTicket(Integer utilisateurId, Integer trajetId, String codeValidation) {
-        UtilisateurStandard utilisateur = utilisateurStandardRepository.findById(utilisateurId)
+        UtilisateurStandard utilisateur = utilisateurStandardRepository.findById(Math.toIntExact(utilisateurId))
                 .orElseThrow(() -> new ResourceNotFoundException("UtilisateurStandard", "id", utilisateurId));
         Trajet trajet = trajetRepository.findById(Long.valueOf(trajetId))
                 .orElseThrow(() -> new ResourceNotFoundException("Trajet", "id", trajetId));
 
         Ticket ticket = new Ticket();
-        ticket.setUtilisateur(utilisateur); // Use correct setter
+        ticket.setUtilisateur(utilisateur);
         ticket.setTrajet(trajet);
-        // ticket.setDateAchat(LocalDateTime.now()); // Should be handled by @PrePersist
 
-        if (codeValidation == null || codeValidation.trim().isEmpty()) {
-            // Generate if not provided (ensure @PrePersist in Ticket entity doesn't conflict)
-            // ticket.setCodeValidation(UUID.randomUUID().toString().substring(0, 10).toUpperCase());
-        } else {
-            if(ticketRepository.findByCodeValidation(codeValidation).isPresent()){ // Assumes this method exists in repo
+        if (codeValidation != null && !codeValidation.trim().isEmpty()) {
+            if(ticketRepository.findByCodeValidation(codeValidation).isPresent()){
                 throw new IllegalArgumentException("Le code de validation fourni existe déjà.");
             }
             ticket.setCodeValidation(codeValidation);
         }
-        // If dateAchat and codeValidation are set by @PrePersist in Ticket entity,
-        // you don't need to set them manually here when saving.
-        // The main purpose of this method would be if codeValidation needs to be pre-defined.
+        // If codeValidation is null here, @PrePersist in Ticket entity should generate it.
+        // @PrePersist should also set dateAchat.
         return ticketRepository.save(ticket);
-    }
 
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<Ticket> getTicketById(Integer id) {
-        return ticketRepository.findById(id);
     }
 
     @Override
-    @Transactional(readOnly = true)
+    public Optional<Ticket> getTicketById(Long id) {
+        return ticketRepository.findById(Math.toIntExact(id));
+
+    }
+
+    @Override
     public List<Ticket> getAllTickets() {
         return ticketRepository.findAll();
     }
 
-    // --- IMPLEMENTATION FOR getTicketsForUser ---
     @Override
-    @Transactional(readOnly = true)
     public List<Ticket> getTicketsForUser(Integer utilisateurId) {
-        UtilisateurStandard utilisateur = utilisateurStandardRepository.findById(utilisateurId)
+        UtilisateurStandard utilisateur = utilisateurStandardRepository.findById(Math.toIntExact(utilisateurId))
                 .orElseThrow(() -> new ResourceNotFoundException("UtilisateurStandard", "id", utilisateurId));
-        // Assuming TicketRepository has: List<Ticket> findByUtilisateur(UtilisateurStandard utilisateur);
-        return ticketRepository.findByUtilisateur(utilisateur); // Use the correct field name here
+        return ticketRepository.findByUtilisateur(utilisateur); // Make sure this method exists in TicketRepository
+
     }
 
-
     @Override
-    @Transactional
     public Ticket updateTicket(Integer id, Ticket ticketDetails) {
-        Ticket existingTicket = ticketRepository.findById(id)
+        Ticket existingTicket = ticketRepository.findById(Math.toIntExact(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket", "id", id));
 
         if (ticketDetails.getCodeValidation() != null && !ticketDetails.getCodeValidation().trim().isEmpty()) {
             if(!ticketDetails.getCodeValidation().equals(existingTicket.getCodeValidation()) &&
-                    ticketRepository.findByCodeValidation(ticketDetails.getCodeValidation()).isPresent()){ // Assumes this method exists
+                    ticketRepository.findByCodeValidation(ticketDetails.getCodeValidation()).isPresent()){
                 throw new IllegalArgumentException("Le nouveau code de validation existe déjà.");
             }
             existingTicket.setCodeValidation(ticketDetails.getCodeValidation());
         }
+        // Add other updatable fields if necessary
         return ticketRepository.save(existingTicket);
+
     }
 
     @Override
-    @Transactional
     public void deleteTicket(Integer id) {
-        if (!ticketRepository.existsById(id)) {
+        if (!ticketRepository.existsById(Math.toIntExact(id))) {
             throw new ResourceNotFoundException("Ticket", "id", id);
         }
-        ticketRepository.deleteById(id);
+        ticketRepository.deleteById(Math.toIntExact(id));
+    }
+
+
+
+
+
+    @Override
+    public List<Ticket> getTicketsForUser(Long utilisateurId) {
+        return List.of();
     }
 
     @Override
-    @Transactional(readOnly = true)
+    public Ticket updateTicket(Long id, Ticket ticketDetails) {
+        return null;
+    }
+
+    @Override
+    public void deleteTicket(Long id) {
+
+    }
+
+    @Override
     public Optional<Ticket> findByCodeValidation(String codeValidation) {
-        return ticketRepository.findByCodeValidation(codeValidation); // Assumes this method exists
+        return Optional.empty();
     }
 }

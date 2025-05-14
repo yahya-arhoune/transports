@@ -1,33 +1,39 @@
-package com.yahyaarhoune.transports.security;
+package com.yahyaarhoune.transports.security; // Ensure this matches your package
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod; // For specifying HTTP methods if needed for more granular security later
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity; // Optional
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy; // If you move to JWT and stateless
+import org.springframework.security.config.http.SessionCreationPolicy; // <<--- IMPORT THIS
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays; // For Arrays.asList
-
-// Assuming you will add these later when re-enabling JWT auth
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity // Optional: if you plan to use @PreAuthorize, @Secured
 public class SecurityConfig {
 
-    // If you were using JwtAuthFilter, you would autowire it:
+    @Autowired // <<--- UNCOMMENT AND INJECT
+    private JwtAuthFilter jwtAuthFilter;
+
+    // UserDetailsService is typically configured into AuthenticationManagerBuilder or HttpSecurity,
+    // direct injection here might not be needed for HttpSecurity config itself unless you use it
+    // to configure AuthenticationManagerBuilder directly.
     // @Autowired
-    // private JwtAuthFilter jwtAuthFilter;
+    // private UserDetailsService userDetailsService;
+
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
@@ -42,56 +48,46 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Allow requests from your Next.js frontend development server
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
-        // Allow common HTTP methods
+        // Allow ALL origins for DEVELOPMENT - BE CAREFUL IN PRODUCTION
+        configuration.setAllowedOriginPatterns(Arrays.asList("*")); // <<--- MODIFIED FOR EXPO GO
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        // Allow common headers, including Authorization for JWT and Content-Type for JSON
         configuration.setAllowedHeaders(Arrays.asList(
-                "Authorization",
-                "Cache-Control",
-                "Content-Type",
-                "X-Requested-With",
-                "accept",
-                "Origin",
-                "Access-Control-Request-Method",
-                "Access-Control-Request-Headers"
-        ));
-        // Expose headers that the client might need to read (e.g., if you set custom headers in response)
-        configuration.setExposedHeaders(Arrays.asList("Authorization")); // Example
-        // Allow credentials (cookies, authorization headers)
+                "Authorization", "Cache-Control", "Content-Type", "X-Requested-With", "accept",
+                "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);
-        // Max age for preflight request cache
-        configuration.setMaxAge(3600L); // 1 hour
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Apply this to all paths
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // APPLY CORS CONFIGURATION FIRST
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
-                // When you re-enable security, you'll likely want stateless sessions for JWT:
-                // .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // --- SET SESSION MANAGEMENT TO STATELESS ---
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                                // Current state: permits ALL requests (for easier initial development)
-                                .anyRequest().permitAll()
+                        // Public endpoints
+                        .requestMatchers("/api/auth/**").permitAll() // Login, register
+                        .requestMatchers(HttpMethod.GET, "/api/trips/available").permitAll() // Example: Allow browsing available trips
 
-                        // EXAMPLE of how you would re-secure it later:
-                        /*
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/utilisateurs-standard").permitAll() // Public registration
-                        .requestMatchers("/api/public-data/**").permitAll() // Example of other public data
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // Example admin-only
-                        .requestMatchers("/api/vehicules/**").hasAnyRole("ADMIN", "CONDUCTEUR") // Example
-                        .anyRequest().authenticated() // All other requests need authentication
-                        */
-                );
-        // When re-enabling JWT security, you'd add your filter:
-        // .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                        // Authenticated endpoints
+                        .requestMatchers("/api/tickets/**").authenticated()
+                        .requestMatchers("/api/trips/history/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/trips").authenticated() // Creating a trip
+                        .requestMatchers(HttpMethod.GET, "/api/trips/{id}").authenticated() // Viewing specific trip details
+                        // Add more specific rules if needed, e.g., for admin or driver roles
+                        // .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // Default: all other unmatche    d requests need authentication (if any are left)
+                        .anyRequest().authenticated()
+                )
+                // --- ADD THE JWT FILTER TO THE CHAIN ---
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
