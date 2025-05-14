@@ -79,13 +79,13 @@ public class TrajetServiceImpl implements TrajetService {
     @Override
     @Transactional(readOnly = true)
     public Optional<Trajet> getTrajetById(Integer id) {
-        return trajetRepository.findById(id);
+        return trajetRepository.findById(Long.valueOf(id));
     }
 
     @Override
     @Transactional
     public Optional<Trajet> updateTrajet(Integer id, Trajet trajetDetails) { // Matches interface: returns Optional<Trajet>
-        return trajetRepository.findById(id)
+        return trajetRepository.findById(Long.valueOf(id))
                 .map(existingTrajet -> {
                     existingTrajet.setOrigine(trajetDetails.getOrigine());
                     existingTrajet.setDestination(trajetDetails.getDestination());
@@ -119,7 +119,7 @@ public class TrajetServiceImpl implements TrajetService {
     @Override
     @Transactional
     public boolean deleteTrajet(Integer id) { // Matches interface: returns boolean
-        Optional<Trajet> trajetOpt = trajetRepository.findById(id);
+        Optional<Trajet> trajetOpt = trajetRepository.findById(Long.valueOf(id));
         if (trajetOpt.isPresent()) {
             Trajet trajet = trajetOpt.get();
 
@@ -144,7 +144,7 @@ public class TrajetServiceImpl implements TrajetService {
             }
             // Or: incidentRepository.deleteAll(incidents); if that's the business rule
 
-            trajetRepository.deleteById(id);
+            trajetRepository.deleteById(Long.valueOf(id));
             return true;
         }
         return false; // Trajet not found
@@ -153,7 +153,7 @@ public class TrajetServiceImpl implements TrajetService {
     @Override
     @Transactional(readOnly = true)
     public List<UtilisateurStandard> getPassagersForTrajet(Integer trajetId) {
-        Trajet trajet = trajetRepository.findById(trajetId)
+        Trajet trajet = trajetRepository.findById(Long.valueOf(trajetId))
                 .orElseThrow(() -> new ResourceNotFoundException("Trajet", "id", trajetId));
         trajet.getListePassagers().size(); // Initialize if lazy
         return trajet.getListePassagers();
@@ -162,7 +162,7 @@ public class TrajetServiceImpl implements TrajetService {
     @Override
     @Transactional(readOnly = true)
     public List<Incident> getIncidentsForTrajet(Integer trajetId) {
-        Trajet trajet = trajetRepository.findById(trajetId)
+        Trajet trajet = trajetRepository.findById(Long.valueOf(trajetId))
                 .orElseThrow(() -> new ResourceNotFoundException("Trajet", "id", trajetId));
         // Assuming IncidentRepository has findByTrajet method
         return incidentRepository.findByTrajet(trajet);
@@ -171,7 +171,7 @@ public class TrajetServiceImpl implements TrajetService {
     @Override // Added to match the updated interface
     @Transactional(readOnly = true)
     public List<Ticket> getTicketsForTrajet(Integer trajetId) {
-        Trajet trajet = trajetRepository.findById(trajetId)
+        Trajet trajet = trajetRepository.findById(Long.valueOf(trajetId))
                 .orElseThrow(() -> new ResourceNotFoundException("Trajet", "id", trajetId));
         // Assuming TicketRepository has findByTrajet method
         return ticketRepository.findByTrajet(trajet);
@@ -180,7 +180,7 @@ public class TrajetServiceImpl implements TrajetService {
     @Override // Added to match the updated interface
     @Transactional
     public Trajet addPassagerToTrajet(Integer trajetId, Integer utilisateurId) {
-        Trajet trajet = trajetRepository.findById(trajetId)
+        Trajet trajet = trajetRepository.findById(Long.valueOf(trajetId))
                 .orElseThrow(() -> new ResourceNotFoundException("Trajet", "id", trajetId));
         UtilisateurStandard utilisateur = utilisateurStandardRepository.findById(utilisateurId)
                 .orElseThrow(() -> new ResourceNotFoundException("UtilisateurStandard", "id", utilisateurId));
@@ -202,7 +202,7 @@ public class TrajetServiceImpl implements TrajetService {
     @Override // Added to match the updated interface
     @Transactional
     public Trajet removePassagerFromTrajet(Integer trajetId, Integer utilisateurId) {
-        Trajet trajet = trajetRepository.findById(trajetId)
+        Trajet trajet = trajetRepository.findById(Long.valueOf(trajetId))
                 .orElseThrow(() -> new ResourceNotFoundException("Trajet", "id", trajetId));
         UtilisateurStandard utilisateur = utilisateurStandardRepository.findById(utilisateurId)
                 .orElseThrow(() -> new ResourceNotFoundException("UtilisateurStandard", "id", utilisateurId));

@@ -32,6 +32,9 @@ public class Trajet {
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime heureArrivee;
 
+    @Column(name = "statut") // Optional: specify column name if different from field name
+    private String statut;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vehicule_id")
     @JsonBackReference("vehicule-trajets")

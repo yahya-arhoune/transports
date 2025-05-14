@@ -1,58 +1,181 @@
 package com.yahyaarhoune.transports.controller;
 
+import com.yahyaarhoune.transports.models.Conducteur; // Assuming you have this entity
+import com.yahyaarhoune.transports.models.Trajet;
+import com.yahyaarhoune.transports.models.UtilisateurStandard; // For trip history logic
+import com.yahyaarhoune.transports.models.Vehicule;   // Assuming you have this entity
+import com.yahyaarhoune.transports.repository.ConducteurRepository;
+import com.yahyaarhoune.transports.repository.TrajetRepository;
+import com.yahyaarhoune.transports.repository.UtilisateurStandardRepository;
+import com.yahyaarhoune.transports.repository.VehiculeRepository;
+// For getting authenticated user if needed in history/available endpoints
+// import com.yahyaarhoune.transports.security.UserDetailsImpl;
+// import org.springframework.security.core.Authentication;
+// import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors; // For filtering example
 
 @RestController
-@RequestMapping("/api/trips") // Base path for trip-related endpoints
+@RequestMapping("/api/trips")
 public class TripController {
 
-    // Placeholder - Replace with actual service call and user ID check later
-    @GetMapping("/history/passenger/{userId}")
-    public ResponseEntity<List<Map<String, Object>>> getPassengerTripHistory(@PathVariable Long userId) {
-        System.out.println("Backend: Received request for trip history for user ID: " + userId);
+    private final TrajetRepository trajetRepository;
+    private final ConducteurRepository conducteurRepository; // Injected for createTrajet example
+    private final VehiculeRepository vehiculeRepository;   // Injected for createTrajet example
+    private final UtilisateurStandardRepository utilisateurStandardRepository; // For trip history example
 
-        // --- Create Fake Trip Data ---
-        Map<String, Object> trip1 = new HashMap<>();
-        trip1.put("id", 101);
-        trip1.put("origine", "Downtown Central");
-        trip1.put("destination", "North Suburbs Mall");
-        trip1.put("heureDepart", LocalDateTime.now().minusDays(1).toString()); // Yesterday
-        trip1.put("heureArrivee", LocalDateTime.now().minusDays(1).plusHours(1).toString());
-        trip1.put("statut", "COMPLETED");
-
-        Map<String, Object> trip2 = new HashMap<>();
-        trip2.put("id", 102);
-        trip2.put("origine", "Airport Terminal B");
-        trip2.put("destination", "Grand Hotel");
-        trip2.put("heureDepart", LocalDateTime.now().minusHours(5).toString()); // Earlier today
-        trip2.put("heureArrivee", LocalDateTime.now().minusHours(4).toString());
-        trip2.put("statut", "COMPLETED");
-
-        Map<String, Object> trip3 = new HashMap<>();
-        trip3.put("id", 103);
-        trip3.put("origine", "West Side Station");
-        trip3.put("destination", "University Campus");
-        trip3.put("heureDepart", LocalDateTime.now().plusHours(2).toString()); // Upcoming
-        trip3.put("heureArrivee", LocalDateTime.now().plusHours(3).toString());
-        trip3.put("statut", "UPCOMING");
-        // --- End Fake Data ---
-
-        List<Map<String, Object>> fakeTrips = Arrays.asList(trip1, trip2, trip3);
-
-        // Simulate filtering by userId (though not really done here)
-        if (userId <= 0) { // Simple check
-            return ResponseEntity.badRequest().build();
-        }
-
-        return ResponseEntity.ok(fakeTrips);
+    @Autowired
+    public TripController(TrajetRepository trajetRepository,
+                          ConducteurRepository conducteurRepository,
+                          VehiculeRepository vehiculeRepository,
+                          UtilisateurStandardRepository utilisateurStandardRepository) {
+        this.trajetRepository = trajetRepository;
+        this.conducteurRepository = conducteurRepository;
+        this.vehiculeRepository = vehiculeRepository;
+        this.utilisateurStandardRepository = utilisateurStandardRepository;
     }
 
-    // Add other endpoints later: /trips/{id}, /trips/search etc.
+    // --- CREATE A NEW TRAJET ---
+    @PostMapping
+    public ResponseEntity<?> createTrajet(@RequestBody Trajet trajetRequest) {
+        try {
+            // Basic validation
+            if (trajetRequest.getOrigine() == null || trajetRequest.getOrigine().isEmpty() ||
+                    trajetRequest.getDestination() == null || trajetRequest.getDestination().isEmpty() ||
+                    trajetRequest.getHeureDepart() == null || trajetRequest.getHeureArrivee() == null) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Origine, destination, heureDepart, and heureArrivee are required."));
+            }
+
+            // --- Optional: Handle linking Conducteur and Vehicule by ID ---
+            // This assumes your incoming trajetRequest might have conducteur.id and vehicule.id set,
+            // or you pass conducteurId and vehiculeId as separate fields in a DTO.
+            // If trajetRequest.conducteur only has an ID, fetch the full entity.
+            if (trajetRequest.getConducteur() != null && trajetRequest.getConducteur().getId() != null) {
+                Conducteur conducteur = conducteurRepository.findById(Math.toIntExact(trajetRequest.getConducteur().getId()))
+                        .orElseThrow(() -> new RuntimeException("Conducteur not found with ID: " + trajetRequest.getConducteur().getId()));
+                trajetRequest.setConducteur(conducteur);
+            } else {
+                // Handle case where no conductor is assigned or ID is missing, if that's valid
+                trajetRequest.setConducteur(null); // Or throw error if required
+            }
+
+            if (trajetRequest.getVehicule() != null && trajetRequest.getVehicule().getId() != null) {
+                Vehicule vehicule = vehiculeRepository.findById(trajetRequest.getVehicule().getId())
+                        .orElseThrow(() -> new RuntimeException("Vehicule not found with ID: " + trajetRequest.getVehicule().getId()));
+                trajetRequest.setVehicule(vehicule);
+            } else {
+                trajetRequest.setVehicule(null); // Or throw error if required
+            }
+            // --- End optional linking ---
+
+            // Ensure ID is null so it's generated by the database
+            trajetRequest.setId(null);
+            Trajet savedTrajet = trajetRepository.save(trajetRequest);
+
+            // Nullify passwords before returning
+            if (savedTrajet.getConducteur() != null) {
+                savedTrajet.getConducteur().setMotDePasse(null);
+            }
+            // TODO: Nullify passwords for listePassagers if applicable
+
+            System.out.println("Backend: Created new trajet with ID: " + savedTrajet.getId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedTrajet);
+        } catch (RuntimeException e) { // Catch specific exceptions like DataIntegrityViolationException if needed
+            System.err.println("Backend: Error creating trajet: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST) // Or INTERNAL_SERVER_ERROR depending on cause
+                    .body(Map.of("message", "Failed to create trajet: " + e.getMessage()));
+        }
+    }
+
+    // --- GET TRIP BY ID ---
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getTripById(@PathVariable Long id) {
+        System.out.println("Backend: Received request for specific trip ID: " + id);
+        Optional<Trajet> trajetOptional = trajetRepository.findById((long) Math.toIntExact(id));
+
+        if (trajetOptional.isPresent()) {
+            Trajet trajet = trajetOptional.get();
+            // Nullify sensitive data
+            if (trajet.getConducteur() != null) {
+                trajet.getConducteur().setMotDePasse(null);
+            }
+            // TODO: Nullify passwords for listePassagers in trajet object
+
+            return ResponseEntity.ok(trajet);
+        } else {
+            System.out.println("Backend: Trip not found with id: " + id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Trajet not found with id: " + id));
+        }
+    }
+
+    // --- GET AVAILABLE TRIPS ---
+    @GetMapping("/available")
+    public ResponseEntity<List<Trajet>> getAvailableTrips() {
+        System.out.println("Backend: Received request for available trips.");
+        // TODO: Implement actual logic to find trips that are:
+        // 1. Status = SCHEDULED or UPCOMING
+        // 2. HeureDepart > LocalDateTime.now()
+        // 3. (Optional) Available seats > 0 if you track capacity
+        List<Trajet> availableTrips = trajetRepository.findByStatutInAndHeureDepartAfter(
+                List.of("SCHEDULED", "UPCOMING"), // Example statuses
+                LocalDateTime.now()
+        ); // You need to define this method in TrajetRepository
+
+        // Nullify sensitive data
+        availableTrips.forEach(trajet -> {
+            if (trajet.getConducteur() != null) {
+                trajet.getConducteur().setMotDePasse(null);
+            }
+            // TODO: Nullify passwords for listePassagers in trajet object
+        });
+
+        return ResponseEntity.ok(availableTrips);
+    }
+
+    // --- GET PASSENGER'S TRIP HISTORY ---
+    // This requires knowing the passenger's ID.
+    // For simplicity, assuming it's passed as a path variable.
+    // In a real app, you'd get the ID from the Authentication principal.
+    @GetMapping("/history/passenger/{userId}")
+    public ResponseEntity<?> getPassengerTripHistory(@PathVariable Long userId) {
+        System.out.println("Backend: Received request for trip history for user ID: " + userId);
+
+        Optional<UtilisateurStandard> userOpt = utilisateurStandardRepository.findById(Math.toIntExact(userId));
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Passenger not found with ID: " + userId));
+        }
+        // UtilisateurStandard passenger = userOpt.get(); // Not used directly in this simple query example
+
+        // TODO: This is a simplified query. You need a proper way to link passengers to trips.
+        // This might be via a Ticket entity (user -> ticket -> trajet)
+        // or if Trajet has a ManyToMany List<UtilisateurStandard> listePassagers.
+        // Example if Trajet has listePassagers:
+        // List<Trajet> userTrips = trajetRepository.findByListePassagersContaining(passenger);
+
+        // For now, let's assume a method in TrajetRepository that finds trips for a passenger.
+        // This is a placeholder for your actual data retrieval logic.
+        List<Trajet> userTrips = trajetRepository.findTrajetsByPassengerId(userId); // YOU NEED TO CREATE THIS REPOSITORY METHOD
+
+        // Nullify sensitive data
+        userTrips.forEach(trajet -> {
+            if (trajet.getConducteur() != null) {
+                trajet.getConducteur().setMotDePasse(null);
+            }
+            // TODO: Nullify passwords for listePassagers in trajet object (including the current user's if listed)
+        });
+
+        return ResponseEntity.ok(userTrips);
+    }
 }

@@ -39,7 +39,7 @@ public class TicketServiceImpl implements TicketService { // <<--- REMOVED 'abst
     public Ticket bookTicket(Integer utilisateurId, Integer trajetId) {
         UtilisateurStandard utilisateur = utilisateurStandardRepository.findById(utilisateurId) // Assuming ID is Integer here
                 .orElseThrow(() -> new ResourceNotFoundException("UtilisateurStandard", "id", utilisateurId));
-        Trajet trajet = trajetRepository.findById(trajetId) // Assuming ID is Integer here
+        Trajet trajet = trajetRepository.findById(Long.valueOf(trajetId)) // Assuming ID is Integer here
                 .orElseThrow(() -> new ResourceNotFoundException("Trajet", "id", trajetId));
 
         // Optional: Add more booking validations (e.g., user already booked, trip capacity)
@@ -70,7 +70,7 @@ public class TicketServiceImpl implements TicketService { // <<--- REMOVED 'abst
     public Ticket createTicket(Integer utilisateurId, Integer trajetId, String codeValidation) {
         UtilisateurStandard utilisateur = utilisateurStandardRepository.findById(utilisateurId)
                 .orElseThrow(() -> new ResourceNotFoundException("UtilisateurStandard", "id", utilisateurId));
-        Trajet trajet = trajetRepository.findById(trajetId)
+        Trajet trajet = trajetRepository.findById(Long.valueOf(trajetId))
                 .orElseThrow(() -> new ResourceNotFoundException("Trajet", "id", trajetId));
 
         Ticket ticket = new Ticket();

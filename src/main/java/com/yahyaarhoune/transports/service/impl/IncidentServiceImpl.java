@@ -48,7 +48,7 @@ public class IncidentServiceImpl implements IncidentService {
         incident.setStatut(StatutIncident.EN_ATTENTE); // Statut initial par défaut
 
         if (trajetId != null) {
-            Trajet trajet = trajetRepository.findById(trajetId)
+            Trajet trajet = trajetRepository.findById(Long.valueOf(trajetId))
                     .orElseThrow(() -> new ResourceNotFoundException("Trajet", "id", trajetId));
             incident.setTrajet(trajet);
         } else {
@@ -82,7 +82,7 @@ public class IncidentServiceImpl implements IncidentService {
         // signalePar et dateHeure ne sont généralement pas modifiés après la création.
         // Le trajet associé pourrait être modifié ou dissocié.
         if (incidentDetails.getTrajet() != null && incidentDetails.getTrajet().getId() != null) {
-            Trajet trajet = trajetRepository.findById(incidentDetails.getTrajet().getId())
+            Trajet trajet = trajetRepository.findById(Long.valueOf(incidentDetails.getTrajet().getId()))
                     .orElseThrow(() -> new ResourceNotFoundException("Trajet", "id", incidentDetails.getTrajet().getId()));
             existingIncident.setTrajet(trajet);
         } else if (incidentDetails.getTrajet() == null && existingIncident.getTrajet() != null) {
