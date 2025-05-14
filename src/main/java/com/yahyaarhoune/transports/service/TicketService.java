@@ -1,12 +1,17 @@
 package com.yahyaarhoune.transports.service;
 
 import com.yahyaarhoune.transports.models.Ticket;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.Optional;
 
 public interface TicketService {
     // Modified to match typical booking flow - service handles code generation
     Ticket bookTicket(Integer utilisateurId, Integer trajetId);
+
+    @Transactional
+    Ticket createTicket(Integer utilisateurId, Integer trajetId, String codeValidation);
 
     Optional<Ticket> getTicketById(Integer id);
     List<Ticket> getAllTickets(); // For admin or specific use cases

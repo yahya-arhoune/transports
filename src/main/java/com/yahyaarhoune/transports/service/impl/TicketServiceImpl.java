@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.UUID; // Pour la génération de code
 
 @Service
-public class TicketServiceImpl implements TicketService {
+public abstract class TicketServiceImpl implements TicketService {
 
     private final TicketRepository ticketRepository;
     private final UtilisateurStandardRepository utilisateurStandardRepository;
@@ -33,8 +33,8 @@ public class TicketServiceImpl implements TicketService {
         this.trajetRepository = trajetRepository;
     }
 
-    @Override
     @Transactional
+    @Override
     public Ticket createTicket(Integer utilisateurId, Integer trajetId, String codeValidation) {
         UtilisateurStandard utilisateur = utilisateurStandardRepository.findById(utilisateurId)
                 .orElseThrow(() -> new ResourceNotFoundException("UtilisateurStandard", "id", utilisateurId));
