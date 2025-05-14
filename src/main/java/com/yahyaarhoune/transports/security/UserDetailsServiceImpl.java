@@ -10,14 +10,14 @@ import com.yahyaarhoune.transports.repository.UtilisateurStandardRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
+// REMOVE: import org.springframework.security.core.userdetails.User; // No longer using Spring's User directly
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
+import java.util.ArrayList; // Or List.of() for immutable lists
 import java.util.List;
 import java.util.Optional;
 
@@ -45,9 +45,9 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         if (standardUserOpt.isPresent()) {
             UtilisateurStandard user = standardUserOpt.get();
             List<GrantedAuthority> authorities = new ArrayList<>();
-            authorities.add(new SimpleGrantedAuthority("ROLE_UTILISATEUR_STANDARD")); // Example role
-            // Add more specific roles if your UtilisateurStandard entity has them
-            return new User(user.getEmail(), user.getMotDePasse(), authorities);
+            authorities.add(new SimpleGrantedAuthority("ROLE_UTILISATEUR_STANDARD"));
+            // Pass ID, email, hashed password, and authorities
+            return new UserDetailsImpl(user.getId(), user.getEmail(), user.getMotDePasse(), authorities);
         }
 
         // Try to find in Administrateur table
@@ -55,10 +55,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         if (adminUserOpt.isPresent()) {
             Administrateur user = adminUserOpt.get();
             List<GrantedAuthority> authorities = new ArrayList<>();
-            authorities.add(new SimpleGrantedAuthority("ROLE_ADMINISTRATEUR")); // Example role
-            // You could get more specific roles from admin.getDroitsAcces() if they map to Spring Security roles
-            // admin.getDroitsAcces().forEach(droit -> authorities.add(new SimpleGrantedAuthority("ROLE_" + droit.toUpperCase())));
-            return new User(user.getEmail(), user.getMotDePasse(), authorities);
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMINISTRATEUR"));
+            return new UserDetailsImpl(user.getId(), user.getEmail(), user.getMotDePasse(), authorities);
         }
 
         // Try to find in Conducteur table
@@ -66,8 +64,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         if (conducteurUserOpt.isPresent()) {
             Conducteur user = conducteurUserOpt.get();
             List<GrantedAuthority> authorities = new ArrayList<>();
-            authorities.add(new SimpleGrantedAuthority("ROLE_CONDUCTEUR")); // Example role
-            return new User(user.getEmail(), user.getMotDePasse(), authorities);
+            authorities.add(new SimpleGrantedAuthority("ROLE_CONDUCTEUR"));
+            return new UserDetailsImpl(user.getId(), user.getEmail(), user.getMotDePasse(), authorities);
         }
 
         // If not found in any table
